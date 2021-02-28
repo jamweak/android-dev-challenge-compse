@@ -18,14 +18,31 @@ package com.example.androiddevchallenge
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
 import com.example.androiddevchallenge.ui.theme.MyTheme
 
 class MainActivity : AppCompatActivity() {
+    @ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -36,14 +53,138 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-// Start building your app here!
+@ExperimentalFoundationApi
 @Composable
 fun MyApp() {
-    Surface(color = MaterialTheme.colors.background) {
-        Text(text = "Ready... Set... GO!")
+    val navController = rememberNavController()
+    val pagerState = PagerState()
+
+    MaterialTheme {
+        NavHost(navController = navController, startDestination = "puppyList") {
+            composable("puppyList") { puppyGrid(navController, pagerState) }
+            composable(
+                "puppyDetail/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) { backStackEntry ->
+                puppyDetailList(
+                    pagerState, backStackEntry.arguments?.getInt("id") ?: 0
+                )
+            }
+        }
     }
 }
 
+@ExperimentalFoundationApi
+@Composable
+fun puppyGrid(navController: NavHostController, pagerState: PagerState) {
+    val list = PuppyRepo.list
+    LazyVerticalGrid(cells = GridCells.Fixed(2),
+        contentPadding = PaddingValues(start = 1.dp, end = 1.dp),
+        content = {
+            items(list) {
+                puppyGridItem(it) {
+                    navController.navigate("puppyDetail/${it.id}") {
+                        popUpTo("puppyList") {
+                            pagerState.hasConsumeJump = false
+                        }
+                    }
+                }
+            }
+        })
+}
+
+@Composable
+fun puppyGridItem(puppy: Puppy, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .height(240.dp)
+            .fillMaxWidth()
+            .padding(1.dp, 0.dp, 1.dp, 2.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Image(
+            painter = painterResource(puppy.imgRes),
+            contentDescription = null,
+            modifier = Modifier
+                .height(200.dp)
+                .fillMaxWidth(),
+            contentScale = ContentScale.FillWidth
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "No.${puppy.id}",
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+                    .wrapContentWidth(Alignment.Start)
+            )
+            Text(
+                text = "❤️:${puppy.viewCount}", modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+                    .wrapContentWidth(Alignment.End)
+            )
+        }
+    }
+}
+
+@Composable
+fun puppyDetailList(pagerState: PagerState, id: Int) {
+    val list = PuppyRepo.list
+    pagerState.maxPage = (list.size - 1).coerceAtLeast(0)
+    Pager(state = pagerState) {
+        if (!pagerState.hasConsumeJump) {
+            pagerState.currentPage = (id - 1).coerceAtLeast(0)
+            pagerState.hasConsumeJump = true
+        }
+        puppyDetail(list[page])
+    }
+}
+
+@Composable
+fun puppyDetail(puppy: Puppy) {
+    val typography = MaterialTheme.typography
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize()
+    ) {
+        Image(
+            painter = painterResource(puppy.imgRes),
+            contentDescription = null,
+            modifier = Modifier
+                .height(480.dp)
+                .fillMaxWidth()
+                .clip(shape = RoundedCornerShape(4.dp)),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            "This is the puppy detail of No.${puppy.id}",
+            style = typography.h6
+        )
+        Text(
+            "❤️:${puppy.viewCount}",
+            style = typography.body2
+        )
+        Text(
+            "Telephone:...",
+            style = typography.body2
+        )
+        Text(
+            "Address:...",
+            style = typography.body2
+        )
+    }
+}
+
+@ExperimentalFoundationApi
 @Preview("Light Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun LightPreview() {
@@ -52,6 +193,7 @@ fun LightPreview() {
     }
 }
 
+@ExperimentalFoundationApi
 @Preview("Dark Theme", widthDp = 360, heightDp = 640)
 @Composable
 fun DarkPreview() {
