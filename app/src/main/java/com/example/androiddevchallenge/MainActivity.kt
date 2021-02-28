@@ -91,7 +91,8 @@ fun MyApp() {
 @Composable
 fun puppyGrid(navController: NavHostController, pagerState: PagerState) {
     val list = PuppyRepo.list
-    LazyVerticalGrid(cells = GridCells.Fixed(2),
+    LazyVerticalGrid(
+        cells = GridCells.Fixed(2),
         contentPadding = PaddingValues(start = 1.dp, end = 1.dp),
         content = {
             items(list) {
@@ -103,7 +104,8 @@ fun puppyGrid(navController: NavHostController, pagerState: PagerState) {
                     }
                 }
             }
-        })
+        }
+    )
 }
 
 @Composable
@@ -137,7 +139,8 @@ fun puppyGridItem(puppy: Puppy, onClick: () -> Unit) {
                     .wrapContentWidth(Alignment.Start)
             )
             Text(
-                text = "❤️:${puppy.viewCount}", modifier = Modifier
+                text = "❤️:${puppy.viewCount}",
+                modifier = Modifier
                     .weight(1f)
                     .padding(end = 4.dp)
                     .wrapContentWidth(Alignment.End)
