@@ -16,11 +16,14 @@
 package com.example.androiddevchallenge
 
 import android.os.Bundle
+import android.util.Log
+import android.util.SparseArray
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,18 +32,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,11 +70,66 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyTheme {
-                MyApp()
+//                MyApp()
+                IIanimation()
             }
         }
     }
 }
+
+/**
+ * 约束关系：如果想确定哪一个 item 正在处于屏幕中心，需要知道 firstVisibleItem 以及对应的 offset，以及 item 间的间距
+ */
+@Composable
+fun IIanimation() {
+    val screen = LocalContext.current.resources.displayMetrics
+    val itemSize = 80.dp
+    val halfScreenWidth = screen.widthPixels.dp / (2 * screen.density)
+    val startEndPadding = halfScreenWidth - itemSize / 2
+    var dynamicPadding = 0.dp
+
+    val data = PuppyRepo.list
+    val listState = rememberLazyListState()
+    val layoutInfo = listState.layoutInfo.visibleItemsInfo
+    val listMap:MutableMap<String,Int> = remember {
+        HashMap(data.size)
+    }
+
+    LazyRow(
+        modifier = Modifier.padding(top = 250.dp),
+        state = listState
+    ) {
+        itemsIndexed(items = data) { index: Int, puppy: Puppy ->
+
+            Spacer(modifier = Modifier.size(if (index == 0) startEndPadding else 0.dp))
+            if (layoutInfo.isNotEmpty()) {
+                for (info in layoutInfo) {
+                    if (!listMap.containsKey(info.key)) {
+                        listMap[info.key.toString()] = info.offset
+                        Log.d("xxx", "add key ${info.key}")
+                    }
+                    Log.d("xxx", "the road is ${info.key}" + ( listMap[info.key]!! - info.offset))
+                    if (listMap[info.key]!! - info.offset > 100) {
+                        dynamicPadding = 10.dp
+                    }
+                }
+            }
+
+            Image(
+                painter = painterResource(id = puppy.imgRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(itemSize)
+                    .clip(shape = CircleShape),
+                contentScale = ContentScale.FillWidth
+            )
+            Spacer(modifier = Modifier.size(if (index == data.size -1) startEndPadding else 10.dp + dynamicPadding))
+//            Log.d("ppp", "firstItem: ${listState.firstVisibleItemIndex}, offset: ${listState.firstVisibleItemScrollOffset}")
+
+        }
+    }
+}
+
 
 @ExperimentalFoundationApi
 @Composable
